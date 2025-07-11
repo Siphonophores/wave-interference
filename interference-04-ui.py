@@ -1,13 +1,39 @@
 #!/usr/bin/env python3
 """
-Interactive interference-04 UI with circular cropping.
-Generates dot-pattern wave interference with circular crop applied to both preview and export.
-Based on interference-03-ui.py with added circular masking functionality.
+Interactive Circular Wave Interference Visualization Tool
+
+This script creates an interactive GUI for visualizing wave interference patterns
+with circular cropping and radial density gradients. It generates dot-pattern
+visualizations where constructive interference creates visible dots.
+
+Key Features:
+- Real-time parameter adjustment with matplotlib sliders
+- Circular cropping of interference patterns
+- Radial density gradient (higher culling probability toward edges)
+- Dual-source wave interference simulation
+- Live preview with exact SVG export correspondence
+- Clean, organized UI with grouped parameter controls
+
+How it works:
+1. Creates a uniform grid in coordinate space
+2. Computes wave superposition from multiple point sources using cosine functions
+3. Normalizes and quantizes the interference field into discrete levels
+4. Shows dots only for even quantization levels (constructive interference)
+5. Applies circular cropping to focus on central region
+6. Applies radial culling for natural density gradient effect
+7. Exports as clean SVG with identical dot placement
+
+Controls:
+- Wave Parameters: Wavelength, viewing extent
+- Grid Parameters: Resolution, quantization levels
+- Source Positions: X/Y coordinates for both interference sources
+- Circular Crop: Circle radius, density gradient intensity
+- Export: Saves SVG to interference-04-svg/ directory
 
 Run:
     python interference-04-ui.py
 
-Needs:
+Dependencies:
     pip install numpy matplotlib svgwrite
 """
 
@@ -176,11 +202,6 @@ def main():
     # Plot the interference pattern
     scatter = ax_plot.scatter(x_vis, y_vis, s=DOT_SIZE, c='black', alpha=0.8)
     
-    # Add circular boundary visualization
-    circle_boundary = Circle((0, 0), CIRCLE_RADIUS, fill=False, color='blue', 
-                           linewidth=2, linestyle='--', alpha=0.7, label='Circular Crop')
-    ax_plot.add_patch(circle_boundary)
-    
     # Add source positions (will be updated dynamically)
     source_scatter = ax_plot.scatter([s[0] for s in SOURCES], [s[1] for s in SOURCES], 
                                    s=80, c='red', marker='x', linewidth=3, label='Sources')
@@ -190,8 +211,8 @@ def main():
     ax_wave = plt.axes([0.05, 0.85, 0.35, 0.025])
     ax_extent = plt.axes([0.05, 0.80, 0.35, 0.025])
     
-    wave_slider = Slider(ax_wave, "Wavelength", 0.5, 8.0, valinit=WAVELENGTH, valstep=0.05)
-    extent_slider = Slider(ax_extent, "Extent", 2.0, 10.0, valinit=EXTENT, valstep=0.1)
+    wave_slider = Slider(ax_wave, "Wavelength", 0.1, 15.0, valinit=WAVELENGTH, valstep=0.05)
+    extent_slider = Slider(ax_extent, "Extent", 1.0, 20.0, valinit=EXTENT, valstep=0.1)
     
     # Wave parameters title
     wave_title = plt.text(0.22, 0.88, 'Wave Parameters', transform=fig.transFigure, 
@@ -201,8 +222,8 @@ def main():
     ax_grid_res = plt.axes([0.05, 0.70, 0.35, 0.025])
     ax_levels = plt.axes([0.05, 0.65, 0.35, 0.025])
     
-    grid_res_slider = Slider(ax_grid_res, "Grid Resolution", 50, 400, valinit=GRID_NX, valstep=10)
-    levels_slider = Slider(ax_levels, "Quantization Levels", 20, 200, valinit=NUM_LEVELS, valstep=5)
+    grid_res_slider = Slider(ax_grid_res, "Grid Resolution", 25, 800, valinit=GRID_NX, valstep=25)
+    levels_slider = Slider(ax_levels, "Quantization Levels", 10, 500, valinit=NUM_LEVELS, valstep=10)
     
     # Grid parameters title
     grid_title = plt.text(0.22, 0.73, 'Grid Parameters', transform=fig.transFigure, 
@@ -214,10 +235,10 @@ def main():
     ax_src2x = plt.axes([0.05, 0.45, 0.35, 0.025])
     ax_src2y = plt.axes([0.05, 0.40, 0.35, 0.025])
     
-    src1x_slider = Slider(ax_src1x, "Source 1 X", -5.0, 5.0, valinit=SOURCES[0][0], valstep=0.1)
-    src1y_slider = Slider(ax_src1y, "Source 1 Y", -5.0, 5.0, valinit=SOURCES[0][1], valstep=0.1)
-    src2x_slider = Slider(ax_src2x, "Source 2 X", -5.0, 5.0, valinit=SOURCES[1][0], valstep=0.1)
-    src2y_slider = Slider(ax_src2y, "Source 2 Y", -5.0, 5.0, valinit=SOURCES[1][1], valstep=0.1)
+    src1x_slider = Slider(ax_src1x, "Source 1 X", -15.0, 15.0, valinit=SOURCES[0][0], valstep=0.1)
+    src1y_slider = Slider(ax_src1y, "Source 1 Y", -15.0, 15.0, valinit=SOURCES[0][1], valstep=0.1)
+    src2x_slider = Slider(ax_src2x, "Source 2 X", -15.0, 15.0, valinit=SOURCES[1][0], valstep=0.1)
+    src2y_slider = Slider(ax_src2y, "Source 2 Y", -15.0, 15.0, valinit=SOURCES[1][1], valstep=0.1)
     
     # Source positions title
     source_title = plt.text(0.22, 0.58, 'Source Positions', transform=fig.transFigure, 
@@ -227,8 +248,8 @@ def main():
     ax_circle_radius = plt.axes([0.05, 0.35, 0.35, 0.025])
     ax_culling_intensity = plt.axes([0.05, 0.30, 0.35, 0.025])
     
-    circle_radius_slider = Slider(ax_circle_radius, "Circle Radius", 1.0, 8.0, valinit=CIRCLE_RADIUS, valstep=0.1)
-    culling_intensity_slider = Slider(ax_culling_intensity, "Density Gradient", 0.0, 1.0, valinit=CULLING_INTENSITY, valstep=0.05)
+    circle_radius_slider = Slider(ax_circle_radius, "Circle Radius", 0.5, 15.0, valinit=CIRCLE_RADIUS, valstep=0.1)
+    culling_intensity_slider = Slider(ax_culling_intensity, "Density Gradient", 0.0, 1.0, valinit=CULLING_INTENSITY, valstep=0.02)
     
     # Circular crop title
     circle_title = plt.text(0.22, 0.38, 'Circular Crop & Density', transform=fig.transFigure, 
@@ -293,9 +314,6 @@ def main():
         
         # Update source positions
         source_scatter.set_offsets(np.array([[s[0], s[1]] for s in SOURCES]))
-        
-        # Update circular boundary
-        circle_boundary.set_radius(CIRCLE_RADIUS)
         
         # Update plot limits
         ax_plot.set_xlim(-EXTENT*1.1, EXTENT*1.1)
